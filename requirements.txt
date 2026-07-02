@@ -1,0 +1,12 @@
+# Orchestration
+apache-airflow==2.9.0
+
+# Base de données (pour vos données E-commerce)
+pymongo
+
+# Analyse et Manipulation de données
+pandas
+numpy
+
+# Tests automatisés
+pytest
