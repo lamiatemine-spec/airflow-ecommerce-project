@@ -2,10 +2,20 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.sensors.filesystem import FileSensor
 from datetime import datetime, timedelta
-from pymongo import MongoClient  # Import direct de pymongo
+from pymongo import MongoClient 
 import pandas as pd
 import os
 import logging
+
+# -------------------------------------------------------------------------
+# CONFIGURATION DYNAMIQUE
+# -------------------------------------------------------------------------
+# Utilise les variables d'environnement avec des valeurs par défaut sécurisées.
+# Dans Docker, MONGO_HOST pointera vers le service défini dans docker-compose.
+MONGO_HOST = os.getenv("MONGO_HOST", "ecommerce_mongodb")
+MONGO_PORT = os.getenv("MONGO_PORT", "27017")
+# URI incluant les credentials définis dans ton docker-compose.yml
+MONGO_URI = f"mongodb://admin:password@{MONGO_HOST}:{MONGO_PORT}/"
 
 # Configuration des chemins dans le conteneur
 DATA_PATH = "/opt/airflow/data/dataset.csv"
@@ -47,7 +57,7 @@ def validate_and_process(**kwargs):
 
 def load_to_mongo(**kwargs):
     """
-    Chargement sécurisé dans MongoDB via connexion directe pymongo.
+    Chargement sécurisé dans MongoDB via connexion dynamique.
     """
     ti = kwargs['ti']
     metrics = ti.xcom_pull(task_ids='process_data')
@@ -55,8 +65,8 @@ def load_to_mongo(**kwargs):
     if not metrics:
         raise ValueError("Aucune métrique trouvée via XCom. La tâche précédente a échoué.")
         
-    # Connexion directe à MongoDB 
-    client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+    # Connexion au client MongoDB avec l'URI dynamique
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     
     try:
         db = client['ecommerce_analytics']
@@ -73,6 +83,9 @@ def load_to_mongo(**kwargs):
     finally:
         client.close()
 
+# -------------------------------------------------------------------------
+# DÉFINITION DU DAG
+# -------------------------------------------------------------------------
 default_args = {
     'owner': 'airflow',
     'start_date': datetime(2026, 6, 1),

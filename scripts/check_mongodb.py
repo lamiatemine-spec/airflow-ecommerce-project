@@ -5,7 +5,7 @@ def check_connection():
     Script de test de connectivité réseau pour Windows (Localhost).
     """
     try:
-        client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
         
         databases = client.list_database_names()
         print("Connexion établie avec succès !")

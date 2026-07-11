@@ -27,3 +27,7 @@ docker/jenkins_home/
 
 # MongoDB
 docker/mongodb_data/
+
+# Fichiers systèmes OS
+.DS_Store
+Thumbs.db

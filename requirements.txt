@@ -1,18 +1,18 @@
 # Orchestration
-# On retire le ==2.9.0 pour laisser pip choisir la version compatible avec Python 3.14
-apache-airflow
+# On utilise la version 2.9.0
+apache-airflow==2.9.0
 
 # Base de données E-commerce
-pymongo
-dnspython
+pymongo==4.7.2
+dnspython==2.6.1
 
 # Analyse et Manipulation de données
-pandas
-numpy
-python-dateutil
+pandas==2.2.2
+numpy==1.26.4
+python-dateutil==2.9.0
 
-# Tests automatisés et qualité
-pytest
-pygments
-packaging
-pluggy
+# Tests automatisés
+pytest==8.2.2
+pygments==2.18.0
+packaging==24.1
+pluggy==1.5.0
