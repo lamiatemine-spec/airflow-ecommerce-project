@@ -12,7 +12,9 @@ x-airflow-common: &airflow-common
     - AIRFLOW__CORE__EXECUTOR=LocalExecutor
     - AIRFLOW__CORE__LOAD_EXAMPLES=False
     - AIRFLOW__WEBSERVER__SECRET_KEY=cle_secrete
+    # Connexions automatiques (persistance par variables d'environnement)
     - AIRFLOW_CONN_FS_DEFAULT=file:///opt/airflow/data
+    - AIRFLOW_CONN_MONGO_DEFAULT=mongodb://admin:password@ecommerce_mongodb:27017/
   volumes:
     - ./dags:/opt/airflow/dags
     - ./data:/opt/airflow/data
@@ -62,7 +64,7 @@ services:
     networks:
       - airflow_net
     ports:
-      - "27018:27017"
+      - "27018:27017" 
     volumes:
       - ./docker/mongodb_data:/data/db
 
@@ -76,6 +78,6 @@ services:
     volumes:
       - ./docker/jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/opt/airflow/data  # Permet à Jenkins d'accéder aux datasets pour les tests
+      - ./data:/opt/airflow/data
     networks:
       - airflow_net
