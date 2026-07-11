@@ -1,1 +1,28 @@
 ﻿docker/jenkins_home/
+
+# Environnement virtuel
+venv/
+env/
+.venv/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+
+# Logs et données locales
+logs/
+*.log
+data/dataset.csv
+data/errors.csv
+
+# Airflow & Docker
+airflow-webserver.pid
+airflow-scheduler.pid
+.airflow/
+docker/jenkins_home/
+.env
+
+# Tests & IDE
+.pytest_cache/
+.vscode/
+.idea/

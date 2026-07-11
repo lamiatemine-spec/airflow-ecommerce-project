@@ -1,0 +1,85 @@
+networks:
+  airflow_net:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: airflow_postgres
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    networks:
+      - airflow_net
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  airflow-webserver:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: airflow_webserver
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__SECRET_KEY=cle_secrete
+      - AIRFLOW_CONN_FS_DEFAULT=file:///opt/airflow/data
+    networks:
+      - airflow_net
+    ports:
+      - "8090:8080"
+    command: bash -c "airflow db migrate && airflow users create --username admin --firstname admin --lastname admin --role Admin --email admin@example.com --password admin || true && airflow webserver"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+
+  airflow-scheduler:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: airflow_scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__SECRET_KEY=cle_secrete
+      - AIRFLOW_CONN_FS_DEFAULT=file:///opt/airflow/data
+    networks:
+      - airflow_net
+    command: scheduler
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+
+  ecommerce_mongodb:
+    image: mongo:latest
+    container_name: ecommerce_mongodb
+    networks:
+      - airflow_net
+    ports:
+      - "27018:27017"
+    volumes:
+      - ./docker/mongodb_data:/data/db
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins_server
+    ports:
+      - "8082:8080"
+      - "50001:50000"
+    volumes:
+      - ./docker/jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock # <--- AJOUT CRUCIAL ICI
+    networks:
+      - airflow_net

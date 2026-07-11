@@ -1,12 +1,17 @@
 # Orchestration
 apache-airflow==2.9.0
 
-# Base de données (pour vos données E-commerce)
+# Base de données E-commerce
 pymongo
+dnspython
 
 # Analyse et Manipulation de données
 pandas
 numpy
+python-dateutil
 
-# Tests automatisés
+# Tests automatisés et qualité
 pytest
+pygments
+packaging
+pluggy
