@@ -64,7 +64,7 @@ services:
     networks:
       - airflow_net
     ports:
-      - "27018:27017" 
+      - "27018:27018" 
     volumes:
       - ./docker/mongodb_data:/data/db
 

@@ -7,7 +7,7 @@ def check_connection():
     """
     try:
         # Connexion au service MongoDB via le réseau interne Docker
-        client = MongoClient("mongodb://ecommerce_mongodb:27017/", serverSelectionTimeoutMS=5000) 
+        client = MongoClient("mongodb://ecommerce_mongodb:27018/", serverSelectionTimeoutMS=5000) 
         
         # Test effectif de la connexion en listant les bases de données
         databases = client.list_database_names()

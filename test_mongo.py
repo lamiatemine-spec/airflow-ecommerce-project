@@ -1,10 +1,10 @@
 ﻿from pymongo import MongoClient
 
 def test_connection():
-    uri = "mongodb://ecommerce_mongodb:27017/"
+    uri = "mongodb://ecommerce_mongodb:27018/"
     print(f"Tentative de connexion à : {uri}")
     try:
-        client = MongoClient("mongodb://ecommerce_mongodb:27017/")
+        client = MongoClient("mongodb://ecommerce_mongodb:27018/")
         db_list = client.list_database_names()
         print("✅ Connexion réussie !")
         print("Bases de données disponibles :", db_list)
