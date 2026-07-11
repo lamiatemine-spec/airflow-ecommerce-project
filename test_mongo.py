@@ -4,7 +4,7 @@ def test_connection():
     uri = "mongodb://ecommerce_mongodb:27017/"
     print(f"Tentative de connexion à : {uri}")
     try:
-        client = MongoClient("mongodb://ecommerce_mongodb:27017/")
+        client = MongoClient("mongodb://admin:password@ecommerce_mongodb:27017/?authSource=admin", serverSelectionTimeoutMS=5000)
         db_list = client.list_database_names()
         print("✅ Connexion réussie !")
         print("Bases de données disponibles :", db_list)
