@@ -1,5 +1,6 @@
 # Orchestration
-apache-airflow==2.9.0
+# On retire le ==2.9.0 pour laisser pip choisir la version compatible avec Python 3.14
+apache-airflow
 
 # Base de données E-commerce
 pymongo

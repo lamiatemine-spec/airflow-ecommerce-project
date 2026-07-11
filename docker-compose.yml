@@ -74,6 +74,7 @@ services:
 
   jenkins:
     image: jenkins/jenkins:lts
+    user: root
     container_name: jenkins_server
     ports:
       - "8082:8080"
