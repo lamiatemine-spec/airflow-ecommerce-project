@@ -1,12 +1,14 @@
 ﻿# Utilisation de l'image officielle Airflow 2.9.0 avec Python 3.11 pour une stabilité maximale
 FROM apache/airflow:2.9.0-python3.11
 
-# 1. Installation des outils de build système
+# 1. Installation des outils de build système et du client Docker
+# Ajout de docker.io pour permettre à Jenkins de piloter le daemon Docker via le socket
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     gcc \
+    docker.io \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

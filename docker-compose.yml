@@ -69,8 +69,9 @@ services:
       - ./docker/mongodb_data:/data/db
 
   jenkins:
-    image: jenkins/jenkins:lts
-    user: root
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.jenkins
     container_name: jenkins_server
     ports:
       - "8082:8080"

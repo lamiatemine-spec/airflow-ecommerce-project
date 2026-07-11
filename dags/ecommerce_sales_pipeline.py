@@ -10,7 +10,7 @@ import logging
 # -------------------------------------------------------------------------
 # CONFIGURATION DYNAMIQUE
 # -------------------------------------------------------------------------
-# Utilise les variables d'environnement avec des valeurs par défaut sécurisées.
+# Variables d'environnement avec des valeurs par défaut sécurisées.
 # Dans Docker, MONGO_HOST pointera vers le service défini dans docker-compose.
 MONGO_HOST = os.getenv("MONGO_HOST", "ecommerce_mongodb")
 MONGO_PORT = os.getenv("MONGO_PORT", "27017")
