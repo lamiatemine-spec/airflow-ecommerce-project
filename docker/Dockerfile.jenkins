@@ -1,0 +1,9 @@
+﻿FROM jenkins/jenkins:lts
+USER root
+# Installation de Docker
+RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
+
+# Installation automatique des plugins nécessaires (Pipeline + Git + Docker)
+RUN jenkins-plugin-cli --plugins workflow-aggregator git docker-workflow
+
+USER jenkins

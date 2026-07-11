@@ -1,18 +1,17 @@
-# Orchestration
-# On utilise la version 2.9.0
+# Orchestration (Airflow)
 apache-airflow==2.9.0
 
 # Base de données E-commerce
-pymongo==4.7.2
+pymongo==4.6.3
 dnspython==2.6.1
 
 # Analyse et Manipulation de données
-pandas==2.2.2
+pandas==2.1.4
 numpy==1.26.4
-python-dateutil==2.9.0
+python-dateutil==2.9.0.post0
 
-# Tests automatisés
-pytest==8.2.2
-pygments==2.18.0
-packaging==24.1
-pluggy==1.5.0
+# Tests automatisés (Alignés sur les contraintes Airflow 2.9.0)
+pytest==7.4.4
+pygments==2.17.2
+packaging==24.0
+pluggy==1.4.0
