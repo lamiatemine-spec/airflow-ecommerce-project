@@ -26,3 +26,6 @@ docker/jenkins_home/
 .pytest_cache/
 .vscode/
 .idea/
+
+# MongoDB
+docker/mongodb_data/
