@@ -55,7 +55,7 @@ def load_to_mongo(**kwargs):
     if not metrics:
         raise ValueError("Aucune métrique trouvée via XCom. La tâche précédente a échoué.")
         
-    # Connexion directe à MongoDB (nom du service défini dans docker-compose)
+    # Connexion directe à MongoDB 
     client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
     
     try:
