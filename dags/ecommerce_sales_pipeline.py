@@ -1,121 +1,90 @@
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.sensors.filesystem import FileSensor
+from airflow.utils.trigger_rule import TriggerRule
 from datetime import datetime, timedelta
-from pymongo import MongoClient 
+from pymongo import MongoClient
 import pandas as pd
 import os
 import logging
 
-# -------------------------------------------------------------------------
-# CONFIGURATION DYNAMIQUE
-# -------------------------------------------------------------------------
-# Variables d'environnement avec des valeurs par défaut sécurisées.
-# Dans Docker, MONGO_HOST pointera vers le service défini dans docker-compose.
-MONGO_HOST = os.getenv("MONGO_HOST", "ecommerce_mongodb")
-MONGO_PORT = os.getenv("MONGO_PORT", "27017")
-# URI incluant les credentials définis dans ton docker-compose.yml
-MONGO_URI = f"mongodb://admin:password@{MONGO_HOST}:{MONGO_PORT}/"
-
-# Configuration des chemins dans le conteneur
+# --- CONFIGURATION ---
+MONGO_URI = "mongodb://admin:password@ecommerce_mongodb:27017/?authSource=admin"
 DATA_PATH = "/opt/airflow/data/dataset.csv"
+VALID_DATA_PATH = "/opt/airflow/data/valid_data.csv"
 ERROR_PATH = "/opt/airflow/data/errors.csv"
 
+# --- LOGIQUE MÉTIER ---
+def check_file_status():
+    """Branching : Vérifie la présence du fichier source."""
+    return 'process_data' if os.path.exists(DATA_PATH) else 'handle_error'
+
 def validate_and_process(**kwargs):
-    """
-    Traitement robuste : Nettoyage, calculs et isolation des erreurs.
-    """
+    """Traitement complet : lecture, nettoyage et validation."""
     if not os.path.exists(DATA_PATH):
-        raise FileNotFoundError(f"Le fichier attendu est introuvable à : {DATA_PATH}")
+        raise FileNotFoundError(f"Fichier introuvable : {DATA_PATH}")
     
-    # Lecture avec gestion des erreurs de format
-    df = pd.read_csv(DATA_PATH, encoding='utf-16')
-    logging.info(f"Fichier chargé. {len(df)} lignes détectées.")
+    # Lecture du CSV (Correction encodage et espaces)
+    df = pd.read_csv(DATA_PATH, sep=',')
+    df.columns = df.columns.str.strip()
     
-    # Nettoyage : Conversion forcée en numérique
+    # Vérification présence colonne category
+    if 'category' not in df.columns:
+        raise KeyError(f"Colonne 'category' manquante. Colonnes : {df.columns.tolist()}")
+
+    # Nettoyage des données numériques
     df['price'] = pd.to_numeric(df['price'], errors='coerce').fillna(0)
     df['quantity'] = pd.to_numeric(df['quantity'], errors='coerce').fillna(0)
     
-    # Séparation données valides / erreurs
+    # Isolation des données valides vs invalides
     valid_df = df[(df['price'] > 0) & (df['quantity'] > 0)].copy()
     error_df = df[(df['price'] <= 0) | (df['quantity'] <= 0)].copy()
     
-    # Sauvegarde des erreurs
+    valid_df.to_csv(VALID_DATA_PATH, index=False)
     error_df.to_csv(ERROR_PATH, index=False)
-    logging.info(f"Nombre d'erreurs isolées : {len(error_df)}")
     
-    # Calcul des KPIs
-    total_revenue = (valid_df['price'] * valid_df['quantity']).sum()
-    metrics = {
-        "nb_commandes": int(len(valid_df)),
-        "chiffre_affaires": float(total_revenue),
-        "panier_moyen": float(total_revenue / len(valid_df)) if len(valid_df) > 0 else 0
-    }
-    
-    logging.info(f"KPIs calculés : {metrics}")
-    return metrics
+    # Retourne les catégories pour une éventuelle génération dynamique future
+    return valid_df['category'].unique().tolist()
 
 def load_to_mongo(**kwargs):
-    """
-    Chargement sécurisé dans MongoDB via connexion dynamique.
-    """
-    ti = kwargs['ti']
-    metrics = ti.xcom_pull(task_ids='process_data')
-    
-    if not metrics:
-        raise ValueError("Aucune métrique trouvée via XCom. La tâche précédente a échoué.")
-        
-    # Connexion au client MongoDB avec l'URI dynamique
+    """Chargement des indicateurs finaux."""
     client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-    
     try:
         db = client['ecommerce_analytics']
-        collection = db['sales_metrics']
-        
-        document = {
+        db['sales_metrics'].insert_one({
             "execution_date": datetime.now().isoformat(),
-            "dag_id": "ecommerce_sales_pipeline",
-            "global_metrics": metrics
-        }
-        
-        result = collection.insert_one(document)
-        logging.info(f"Données insérées dans MongoDB avec ID : {result.inserted_id}")
+            "status": "Success",
+            "processed_at": VALID_DATA_PATH
+        })
     finally:
         client.close()
 
-# -------------------------------------------------------------------------
-# DÉFINITION DU DAG
-# -------------------------------------------------------------------------
+# --- DAG ---
 default_args = {
     'owner': 'airflow',
     'start_date': datetime(2026, 6, 1),
     'retries': 1,
-    'retry_delay': timedelta(minutes=2)
+    'retry_delay': timedelta(minutes=5)
 }
 
-with DAG(
-    'ecommerce_sales_pipeline',
-    default_args=default_args,
-    schedule_interval=None,
-    catchup=False
-) as dag:
+with DAG('ecommerce_sales_pipeline', default_args=default_args, schedule_interval=None, catchup=False) as dag:
 
-    wait_for_file = FileSensor(
-        task_id='wait_for_file',
-        filepath='/opt/airflow/data/dataset.csv',
-        fs_conn_id='fs_default', 
-        poke_interval=10, 
-        timeout=600
+    wait_for_file = FileSensor(task_id='wait_for_file', filepath=DATA_PATH, timeout=600)
+    
+    branching = BranchPythonOperator(task_id='branching', python_callable=check_file_status)
+
+    process_data = PythonOperator(task_id='process_data', python_callable=validate_and_process)
+
+    handle_error = PythonOperator(task_id='handle_error', python_callable=lambda: logging.error("Flux interrompu : fichier absent."))
+
+    load_to_mongodb = PythonOperator(task_id='load_to_mongodb', python_callable=load_to_mongo)
+
+    final_report = PythonOperator(
+        task_id='final_report',
+        python_callable=lambda: logging.info("Pipeline global clôturé avec succès."),
+        trigger_rule=TriggerRule.ALL_DONE
     )
 
-    process_data = PythonOperator(
-        task_id='process_data',
-        python_callable=validate_and_process
-    )
-
-    load_to_mongodb = PythonOperator(
-        task_id='load_to_mongodb',
-        python_callable=load_to_mongo
-    )
-
-    wait_for_file >> process_data >> load_to_mongodb
+    # --- ARCHITECTURE DÉPENDANCES ---
+    wait_for_file >> branching >> [process_data, handle_error]
+    process_data >> load_to_mongodb >> final_report

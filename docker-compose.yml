@@ -2,7 +2,6 @@ networks:
   airflow_net:
     driver: bridge
 
-# Centralisation des configurations Airflow pour éviter la duplication
 x-airflow-common: &airflow-common
   build:
     context: .
@@ -12,7 +11,6 @@ x-airflow-common: &airflow-common
     - AIRFLOW__CORE__EXECUTOR=LocalExecutor
     - AIRFLOW__CORE__LOAD_EXAMPLES=False
     - AIRFLOW__WEBSERVER__SECRET_KEY=cle_secrete
-    # Connexions automatiques (persistance par variables d'environnement)
     - AIRFLOW_CONN_FS_DEFAULT=file:///opt/airflow/data
     - AIRFLOW_CONN_MONGO_DEFAULT=mongodb://admin:password@ecommerce_mongodb:27017/
   volumes:
@@ -45,7 +43,10 @@ services:
         condition: service_healthy
     ports:
       - "8090:8080"
-    command: bash -c "airflow db migrate && airflow users create --username admin --firstname admin --lastname admin --role Admin --email admin@example.com --password admin || true && airflow webserver"
+    command: >
+      bash -c "airflow db migrate && 
+               airflow users create --username admin --firstname admin --lastname admin --role Admin --email admin@example.com --password admin || echo 'User already exists' && 
+               airflow webserver"
 
   airflow-scheduler:
     <<: *airflow-common
@@ -64,7 +65,7 @@ services:
     networks:
       - airflow_net
     ports:
-      - "27018:27017" 
+      - "27018:27017"
     volumes:
       - ./docker/mongodb_data:/data/db
 
@@ -78,7 +79,6 @@ services:
       - "50001:50000"
     volumes:
       - ./docker/jenkins_home:/var/jenkins_home
-      # Montage du socket Docker pour permettre au pipeline Jenkins de lancer des conteneurs
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/opt/airflow/data
     networks:
