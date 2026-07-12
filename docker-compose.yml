@@ -78,6 +78,7 @@ services:
       - "50001:50000"
     volumes:
       - ./docker/jenkins_home:/var/jenkins_home
+      # Montage du socket Docker pour permettre au pipeline Jenkins de lancer des conteneurs
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/opt/airflow/data
     networks:
