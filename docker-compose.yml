@@ -69,6 +69,15 @@ services:
     volumes:
       - ./docker/mongodb_data:/data/db
 
+  # Service proxy pour permettre à Jenkins d'accéder à Docker sans erreur de permission
+  docker-proxy:
+    image: alpine/socat
+    command: TCP4-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - airflow_net
+
   jenkins:
     build:
       context: .
@@ -77,9 +86,12 @@ services:
     ports:
       - "8082:8080"
       - "50001:50000"
+    environment:
+      - DOCKER_HOST=tcp://docker-proxy:2375
     volumes:
       - ./docker/jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/opt/airflow/data
     networks:
       - airflow_net
+    depends_on:
+      - docker-proxy

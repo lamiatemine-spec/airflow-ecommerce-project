@@ -1,4 +1,4 @@
-id,product,price,quantity
-1001,Laptop,1200.5,1
-1002,Mouse,25.0,3
-1003,Monitor,150.0,2
+id,product,price,quantity,category
+1001,Laptop,1200.5,1,Informatique
+1002,Mouse,25.0,3,Accessoires
+1003,Monitor,150.0,2,Informatique
