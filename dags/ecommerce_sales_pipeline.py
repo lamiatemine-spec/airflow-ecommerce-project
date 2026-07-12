@@ -20,17 +20,18 @@ def check_file_status():
     return 'process_data' if os.path.exists(DATA_PATH) else 'handle_error'
 
 def validate_and_process(**kwargs):
-    """Traitement complet : lecture, nettoyage et validation."""
+    """Traitement robuste : lecture, nettoyage et validation."""
     if not os.path.exists(DATA_PATH):
         raise FileNotFoundError(f"Fichier introuvable : {DATA_PATH}")
     
-    # Lecture du CSV (Correction encodage et espaces)
-    df = pd.read_csv(DATA_PATH, sep=',')
+    # Lecture du CSV avec encodage forcé en utf-16 pour éviter les erreurs de lecture
+    # Utilisation de sep=',' comme convenu dans votre fichier CSV
+    df = pd.read_csv(DATA_PATH, sep=',', encoding='utf-16')
     df.columns = df.columns.str.strip()
     
     # Vérification présence colonne category
     if 'category' not in df.columns:
-        raise KeyError(f"Colonne 'category' manquante. Colonnes : {df.columns.tolist()}")
+        raise KeyError(f"Colonne 'category' manquante. Colonnes présentes : {df.columns.tolist()}")
 
     # Nettoyage des données numériques
     df['price'] = pd.to_numeric(df['price'], errors='coerce').fillna(0)
@@ -43,7 +44,7 @@ def validate_and_process(**kwargs):
     valid_df.to_csv(VALID_DATA_PATH, index=False)
     error_df.to_csv(ERROR_PATH, index=False)
     
-    # Retourne les catégories pour une éventuelle génération dynamique future
+    logging.info(f"Traitement terminé. {len(valid_df)} lignes valides.")
     return valid_df['category'].unique().tolist()
 
 def load_to_mongo(**kwargs):
@@ -56,6 +57,7 @@ def load_to_mongo(**kwargs):
             "status": "Success",
             "processed_at": VALID_DATA_PATH
         })
+        logging.info("Données insérées dans MongoDB avec succès.")
     finally:
         client.close()
 
